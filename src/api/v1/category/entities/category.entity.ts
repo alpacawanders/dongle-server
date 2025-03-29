@@ -1,25 +1,23 @@
 import {
     Column,
     CreateDateColumn,
-    DeleteDateColumn,
     Entity,
+    OneToMany,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+import { Club } from '../../club/entities/club.entity';
 
-@Entity('banner')
-export class Banner {
+@Entity('category')
+export class Category {
     @PrimaryGeneratedColumn()
     id: number;
 
     @Column()
-    image_url: string;
-
-    @Column({ nullable: true })
-    href: string;
+    name: string;
 
     @Column()
-    order: string;
+    slug: string;
 
     @CreateDateColumn()
     createdAt: Date;
@@ -27,6 +25,6 @@ export class Banner {
     @UpdateDateColumn({ nullable: true })
     updatedAt: Date;
 
-    @DeleteDateColumn({ nullable: true })
-    deletedAt: Date;
+    @OneToMany(() => Club, (club) => club.category)
+    clubs: Club[];
 }
