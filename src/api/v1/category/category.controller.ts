@@ -11,7 +11,7 @@ import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
-@Controller({ path: 'club', version: '1' })
+@Controller({ path: 'category', version: '1' })
 export class CategoryController {
     constructor(private readonly categoryService: CategoryService) {}
 
