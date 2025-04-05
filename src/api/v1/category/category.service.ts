@@ -1,26 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Category } from './entities/category.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class CategoryService {
-  create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
-  }
+    constructor(
+        @InjectRepository(Category)
+        private readonly categoryRepository: Repository<Category>,
+    ) {}
 
-  findAll() {
-    return `This action returns all category`;
-  }
+    async findAll() {
+        const category = await this.categoryRepository.find();
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
-  }
+        if (!category) {
+            throw new NotFoundException('카테고리가 존재하지 않습니다.');
+        }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
-  }
+        return category;
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} category`;
-  }
+    async findOne(id: number) {
+        const category = await this.categoryRepository.findOne({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('존재하지 않는 카테고리 입니다.');
+        }
+
+        return category;
+    }
+
+    async createCategory(createCategoryDto: CreateCategoryDto) {
+        return this.categoryRepository.save(createCategoryDto);
+    }
+
+    async updateCategory(id: number, updateCategoryDto: UpdateCategoryDto) {
+        const category = await this.categoryRepository.findOne({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('존재하지 않는 카테고리 입니다.');
+        }
+        await this.categoryRepository.update(id, updateCategoryDto);
+        return this.categoryRepository.findOne({ where: { id } });
+    }
+
+    async deleteCategory(id: number) {
+        const category = await this.categoryRepository.findOne({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('존재하지 않는 카테고리 입니다.');
+        }
+
+        await this.categoryRepository.delete({ id });
+        return id;
+    }
 }
