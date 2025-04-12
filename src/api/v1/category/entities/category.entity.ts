@@ -7,6 +7,7 @@ import {
     UpdateDateColumn,
 } from 'typeorm';
 import { Club } from '../../club/entities/club.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('category')
 export class Category {
@@ -23,6 +24,7 @@ export class Category {
     createdAt: Date;
 
     @UpdateDateColumn({ nullable: true })
+    @Exclude()
     updatedAt: Date;
 
     @OneToMany(() => Club, (club) => club.category)
