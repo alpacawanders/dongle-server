@@ -10,8 +10,9 @@ import {
 import { Report } from '../../report/entities/report.entity';
 import { Club } from '../../club/entities/club.entity';
 import { Notice } from '../../notice/entities/notice.entity';
+import { Exclude } from 'class-transformer';
 
-export enum UserRole {
+export enum Role {
     USER = 'USER',
     LEADER = 'LEADER',
     ADMIN = 'ADMIN',
@@ -26,21 +27,31 @@ export class User {
     email: string;
 
     @Column()
+    @Exclude({
+        toPlainOnly: true,
+    })
     password: string;
 
-    @Column()
+    @Column({ nullable: true })
     name: string;
 
-    @Column({ type: 'enum', enum: UserRole })
-    role: UserRole;
+    @Column({
+        type: 'enum',
+        enum: Role,
+        default: Role.USER,
+    })
+    role: Role;
 
     @CreateDateColumn()
+    @Exclude()
     createdAt: Date;
 
     @UpdateDateColumn({ nullable: true })
+    @Exclude()
     updatedAt: Date;
 
     @DeleteDateColumn({ nullable: true })
+    @Exclude()
     deletedAt: Date;
 
     @OneToMany(() => Report, (report) => report.writer)

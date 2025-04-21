@@ -5,6 +5,7 @@ import { V1Module } from './api/v1/v1.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
+import { envKeys } from './api/v1/common/env';
 
 @Module({
     imports: [
@@ -18,16 +19,19 @@ import * as Joi from 'joi';
                 DB_USERNAME: Joi.string().required(),
                 DB_PASSWORD: Joi.string().required(),
                 DB_DATABASE: Joi.string().required(),
+                HASH_ROUNDS: Joi.number().required(),
+                ACCESS_TOKEN_SECRET: Joi.string().required(),
+                REFRESH_TOKEN_SECRET: Joi.string().required(),
             }),
         }),
         TypeOrmModule.forRootAsync({
             useFactory: (env: ConfigService) => ({
-                type: env.get<string>('DB_TYPE') as 'mysql',
-                host: env.get<string>('DB_HOST'),
-                port: env.get<number>('DB_PORT'),
-                username: env.get<string>('DB_USERNAME'),
-                password: env.get<string>('DB_PASSWORD'),
-                database: env.get<string>('DB_DATABASE'),
+                type: env.get<string>(envKeys.dbType) as 'mysql',
+                host: env.get<string>(envKeys.dbHost),
+                port: env.get<number>(envKeys.dbPort),
+                username: env.get<string>(envKeys.dbUsername),
+                password: env.get<string>(envKeys.dbPassword),
+                database: env.get<string>(envKeys.dbDatabase),
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
                 synchronize: true,
             }),
