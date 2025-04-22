@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
+import { Role, User } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -16,22 +20,26 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-    PareseBaseicToken(rawToken: string) {
-        // 1) 토큰을  ' '기준으로 스플릿 한 후 토큰 값만 추출하기
-        // ['Basic', $token]
+    parseBasicToken(rawToken: string) {
+        /// 1) 토큰을 ' ' 기준으로 스플릿 한 후 토큰 값만 추출하기
+        /// ['Basic', $token]
         const basicSplit = rawToken.split(' ');
 
         if (basicSplit.length !== 2) {
             throw new BadRequestException('토큰 포맷이 잘못됐습니다!');
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_, token] = basicSplit;
+        const [basic, token] = basicSplit;
 
-        // 2) 추출한 토큰을 base64로 디코딩하여 이메일과 비밀번호로 나누기
+        if (basic.toLowerCase() !== 'basic') {
+            throw new BadRequestException('토큰 포맷이 잘못됐습니다!');
+        }
+
+        /// 2) 추출한 토큰을 base64 디코딩해서 이메일과 비밀번호로 나눈다.
         const decoded = Buffer.from(token, 'base64').toString('utf-8');
 
-        // ['email:password']
+        /// "email:password"
+        /// [email, password]
         const tokenSplit = decoded.split(':');
 
         if (tokenSplit.length !== 2) {
@@ -46,9 +54,49 @@ export class AuthService {
         };
     }
 
+    async parseBearerToken(rawToken: string, isRefreshToken: boolean) {
+        const basicSplit = rawToken.split(' ');
+
+        if (basicSplit.length !== 2) {
+            throw new BadRequestException('토큰 포맷이 잘못됐습니다!');
+        }
+
+        const [bearer, token] = basicSplit;
+
+        if (bearer.toLowerCase() !== 'bearer') {
+            throw new BadRequestException('토큰 포맷이 잘못됐습니다!');
+        }
+
+        let payload: any;
+
+        try {
+            payload = await this.jwtService.verifyAsync(token, {
+                secret: this.configService.get<string>(
+                    isRefreshToken
+                        ? envKeys.refreshTokenSecret
+                        : envKeys.accessTokenSecret,
+                ),
+            });
+        } catch (e) {
+            throw new UnauthorizedException(
+                '토큰이 만료됐거나 유효하지 않습니다!',
+            );
+        }
+
+        if (isRefreshToken && payload.type !== 'refresh') {
+            throw new BadRequestException('Refresh 토큰을 입력 해주세요!');
+        }
+
+        if (!isRefreshToken && payload.type !== 'access') {
+            throw new BadRequestException('Access 토큰을 입력 해주세요!');
+        }
+
+        return payload;
+    }
+
     // rawToken -> BasicToken
     async registerUser(rawToken: string) {
-        const { email, password } = this.PareseBaseicToken(rawToken);
+        const { email, password } = this.parseBasicToken(rawToken);
 
         const user = await this.userRepository.findOne({
             where: {
@@ -97,7 +145,10 @@ export class AuthService {
         return user;
     }
 
-    async issueToken(user: User, isRefreshToken: boolean) {
+    async issueToken(
+        user: { id: number; role: Role },
+        isRefreshToken: boolean,
+    ) {
         const refreshTokenSecret = this.configService.get<string>(
             envKeys.refreshTokenSecret,
         );
@@ -119,7 +170,7 @@ export class AuthService {
     }
 
     async login(rawToken: string) {
-        const { email, password } = this.PareseBaseicToken(rawToken);
+        const { email, password } = this.parseBasicToken(rawToken);
 
         const user = await this.validate(email, password);
 

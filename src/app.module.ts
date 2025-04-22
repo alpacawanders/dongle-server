@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import {
+    MiddlewareConsumer,
+    Module,
+    NestModule,
+    RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { V1Module } from './api/v1/v1.module';
@@ -6,6 +11,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { envKeys } from './api/v1/common/env';
+import { BearerTokenMiddleware } from './api/v1/auth/middleware/bearer-token.middleware';
+import { AuthModule } from './api/v1/auth/auth.module';
 
 @Module({
     imports: [
@@ -38,8 +45,25 @@ import { envKeys } from './api/v1/common/env';
             inject: [ConfigService],
         }),
         V1Module,
+        AuthModule,
     ],
     controllers: [AppController],
     providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(BearerTokenMiddleware)
+            .exclude(
+                {
+                    path: 'v1/auth/login',
+                    method: RequestMethod.POST,
+                },
+                {
+                    path: 'v1/auth/register',
+                    method: RequestMethod.POST,
+                },
+            )
+            .forRoutes({ path: 'v1/*', method: RequestMethod.ALL });
+    }
+}
