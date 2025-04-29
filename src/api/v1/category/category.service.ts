@@ -4,6 +4,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
+import { GetCategoryDto } from './dto/get-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -12,14 +13,18 @@ export class CategoryService {
         private readonly categoryRepository: Repository<Category>,
     ) {}
 
-    async findAll() {
-        const category = await this.categoryRepository.find();
+    async findAll(dto: GetCategoryDto) {
+        const { page, take } = dto;
 
-        if (!category) {
-            throw new NotFoundException('카테고리가 존재하지 않습니다.');
+        if (take && page) {
+            return [
+                await this.categoryRepository.find({
+                    skip: (page - 1) * take,
+                    take: take,
+                }),
+                await this.categoryRepository.count(),
+            ];
         }
-
-        return category;
     }
 
     async findOne(id: number) {
@@ -35,6 +40,14 @@ export class CategoryService {
     }
 
     async createCategory(createCategoryDto: CreateCategoryDto) {
+        const category = await this.categoryRepository.findOne({
+            where: { name: createCategoryDto.name },
+        });
+
+        if (category) {
+            throw new NotFoundException('이미 존재하는 카테고리 입니다');
+        }
+
         return this.categoryRepository.save(createCategoryDto);
     }
 
