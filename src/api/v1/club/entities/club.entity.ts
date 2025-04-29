@@ -12,6 +12,7 @@ import {
 import { Report } from '../../report/entities/report.entity';
 import { User } from '../../user/entities/user.entity';
 import { Category } from '../../category/entities/category.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('club')
 export class Club {
@@ -40,6 +41,9 @@ export class Club {
     @Column({ nullable: true })
     apply_url: string;
 
+    @Column({ default: true })
+    isRecruiting: boolean;
+
     @Column({ type: 'date', nullable: true })
     recruit_start: Date;
 
@@ -63,8 +67,10 @@ export class Club {
     createdAt: Date;
 
     @UpdateDateColumn({ nullable: true })
+    @Exclude()
     updatedAt: Date;
 
     @DeleteDateColumn({ nullable: true })
+    @Exclude()
     deletedAt: Date;
 }
