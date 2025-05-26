@@ -10,6 +10,7 @@ import { RBACGuard } from './auth/guard/rbac.guard';
 import { ResponseTimeInterceptor } from './common/interceptor/response-time.interceptor';
 import { ForbiddenExceptionFilter } from './common/filter/forbidden.filter';
 import { QueryFailedExceptionFilter } from './common/filter/query-failed.filter';
+import { CommonModule } from './common/common.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { QueryFailedExceptionFilter } from './common/filter/query-failed.filter'
         BannerModule,
         UserModule,
         CategoryModule,
+        CommonModule,
     ],
     providers: [
         {

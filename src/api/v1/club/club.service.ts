@@ -7,6 +7,8 @@ import { Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entity';
 import { User } from '../user/entities/user.entity';
 import { GetClubDto } from './dto/get-club.dto';
+import { join } from 'path';
+import { rename } from 'fs/promises';
 
 @Injectable()
 export class ClubService {
@@ -93,8 +95,17 @@ export class ClubService {
             throw new NotFoundException('존재하지 않는 사용자입니다');
         }
 
+        const thumbnailFolder = join('public', 'club');
+        const tempFolder = join('public', 'temp');
+
+        await rename(
+            join(process.cwd(), tempFolder, createClubDto.thumbnail),
+            join(process.cwd(), thumbnailFolder, createClubDto.thumbnail),
+        );
+
         const club = this.clubRepository.create({
             ...rest,
+            thumbnail: join(thumbnailFolder, createClubDto.thumbnail),
             category,
             owner,
         });
@@ -103,13 +114,47 @@ export class ClubService {
     }
 
     async updateClub(id: number, updateClubDto: UpdateClubDto): Promise<Club> {
+        const { category_id, owner_id, ...rest } = updateClubDto;
+
         const club = await this.clubRepository.findOneBy({ id });
 
         if (!club) {
             throw new NotFoundException('해당 클럽이 존재하지 않습니다.');
         }
 
-        await this.clubRepository.update(id, updateClubDto);
+        const category = await this.categoryRepository.findOneBy({
+            id: category_id,
+        });
+
+        if (!category) {
+            throw new NotFoundException('존재하지 않는 카테고리 입니다.');
+        }
+
+        const owner = await this.userRepository.findOneBy({
+            id: owner_id,
+        });
+
+        if (!owner) {
+            throw new NotFoundException('존재하지 않는 사용자입니다');
+        }
+
+        const thumbnailFolder = join('public', 'club');
+        const tempFolder = join('public', 'temp');
+
+        await rename(
+            join(process.cwd(), tempFolder, updateClubDto.thumbnail),
+            join(process.cwd(), thumbnailFolder, updateClubDto.thumbnail),
+        );
+
+        await this.clubRepository.update(
+            { id },
+            {
+                ...rest,
+                thumbnail: join('public', 'club', updateClubDto.thumbnail),
+                category,
+                owner,
+            },
+        );
 
         return await this.clubRepository.findOne({
             where: { id },
